@@ -1,0 +1,262 @@
+{% extends 'shopping/base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+<div class="row">
+	<div class="col-lg-6">
+		<div class="box-element" id="form-wrapper">
+
+			<form id="form">
+				{% csrf_token %}
+
+				<!-- User Info -->
+
+				<div id="user-info">
+					<div class="form-field">
+						<input required class="form-control" type="text" name="name" placeholder="Name..">
+					</div>
+
+					<div class="form-field">
+						<input required class="form-control" type="text" name="email" placeholder="Email..">
+					</div>
+				</div>
+
+
+				<!-- Shipping Info -->
+
+				<div id="shipping-info">
+					<hr>
+					<p><strong>Shipping Information </strong></p>
+					<hr>
+
+					<div class="form-field">
+						<small> Address </small>
+						<input class="form-control" type="text" name="address">
+					</div>
+
+					<div class="form-field">
+						<small> Address 2</small>
+						<input class="form-control" type="text" name="address2">
+					</div>
+
+					<div class="form-field">
+						<small> City</small>
+						<input class="form-control" type="text" name="city">
+					</div>
+
+					<div class="form-field">
+						<small>State</small>
+						<input class="form-control" type="text" name="state">
+					</div>
+
+					<div class="form-field">
+						<small>Zip</small>
+						<input class="form-control" type="text" name="zip">
+					</div>
+
+				</div>
+				<input class="btn btn-success btn-block" id="form-button" type="submit" value="Continue">
+			</form>
+		</div>
+
+		<br>
+		<div class="box-element hidden" id="payment-info">
+			<small>Paypal Options</small>
+			<div id="paypal-button-container"></div>
+			<!-- <button id="make-payment">Make Payment</button> -->
+		</div>
+	</div>
+
+	<div class="col-lg-6">
+		<div class="box-element" id="form-wrapper">
+
+			<a class="btn btn-outline-dark" href="{% url 'cart' %}"> &#8656; Back to Cart</a>
+			<hr>
+
+			<p><strong>Order Summary</strong></p>
+			<hr>
+
+			{% for item in items %}
+			<div class="cart-row">
+				<div style="flex:2"><a href="#">
+						<img class="row-image" src="{{ item.product.image.url }}"></a></div>
+				<div style="flex:2">
+					<p>{{ item.product.name }}</p>
+				</div>
+				<div style="flex:1">
+					<p>${{ item.product.price }}</p>
+				</div>
+				<div style="flex:1">
+					<p>X {{ item.quantity }}</p>
+				</div>
+				<div style="flex:1">
+					<p>${{ item.total_price }}</p>
+				</div>
+			</div>
+
+			{% endfor %}
+
+			<h6>Items: {{ order.get_cart_items }}</h6>
+			<h6>Total: ${{ order.get_cart_total }}</h6>
+		</div>
+
+	</div>
+</div>
+</div>
+<!-- Include the PayPal JavaScript SDK -->
+<script
+	src="https://www.paypal.com/sdk/js?client-id=AQXfZ5iRkJeO9gfcjF33BlMz95G05KBFoCiYvKUOBlSJRQdaZp5xqMaa05gNstRiLjqZuR1S9AqpfHOX&currency=USD&disable-funding=credit">
+	</script>
+
+
+<script>
+
+	let totalCost = "{{ order.get_cart_total }}"
+	// Render the PayPal button into #paypal-button-container
+	paypal.Buttons({
+
+		// Set up the transaction
+		createOrder: function (data, actions) {
+			return actions.order.create({
+				purchase_units: [{
+					amount: {
+						value: parseFloat(totalCost).toFixed(2)
+						//value: total
+					}
+				}]
+			});
+		},
+
+		// Finalize the transaction
+		onApprove: function (data, actions) {
+			return actions.order.capture().then(function (details) {
+				// Show a success message to the buyer
+				//alert('Transaction completed by ' + details.payer.name.given_name + '!');
+				onSubmitFormData()
+			});
+		}
+
+
+	}).render('#paypal-button-container');
+</script>
+<script type="text/javascript">
+
+	let shipping = "{{ order.shipping }}"
+	let total = "{{ order.get_cart_total }}"
+
+	if (shipping == 'False') {
+		document.getElementById('shipping-info').innerHTML = ''
+
+	}
+
+	// hide username and email form if user is authenticated
+
+	if (user != 'AnonymousUser') {
+		document.querySelector('#user-info').innerHTML = ''
+
+	}
+
+	if (shipping == 'False' && user != 'AnonymousUser') {
+
+		// hide username and email
+		document.querySelector('#form-wrapper').classList.add('hidden')
+
+		// show payment options if logged in user has any digital product
+		document.querySelector('#payment-info').classList.remove('hidden')
+
+	}
+
+	// make continue button hidden once it is clicked
+	let form = document.querySelector('#form')
+	csrftoken = form.getElementsByTagName('input')[0].value
+
+	// on submit the form 
+	form.addEventListener('submit', (e) => {
+		e.preventDefault()
+		console.log('form submitted');
+		document.querySelector('#form-button').classList.add('hidden')
+		document.querySelector('#payment-info').classList.remove('hidden')
+
+	})
+
+	//let paymentForm = document.querySelector('#make-payment')
+	/*
+	paymentForm.addEventListener('click', (e) => {
+		e.preventDefault()
+		onSubmitFormData()
+
+	})
+	*/
+
+
+
+	// this is for make payment
+	function onSubmitFormData() {
+		console.log('Payment Form Submitted')
+
+		// this is for first two input field
+		let userFormData = {
+			'name': null,
+			'email': null,
+			'total': total,
+		}
+		let shippingInfo = {
+			'address': null,
+			'address2': null,
+			'city': null,
+			'state': null,
+			'zip': null
+		}
+		if (shipping != 'False') {
+
+			shippingInfo.address = form.address.value,
+				shippingInfo.address2 = form.address2.value,
+				shippingInfo.city = form.city.value,
+				shippingInfo.state = form.state.value,
+				shippingInfo.zip = form.zip.value
+
+		}
+
+		if (user == 'AnonymousUser') {
+			console.log('user is AnonymousUser')
+			userFormData.name = form.name.value
+			userFormData.email = form.email.value
+		} else {
+			userFormData.name = user.name
+			userFormData.email = user.email
+		}
+
+		let url = '/process_order/'
+
+		fetch(url, {
+			method: 'POST',
+			headers: {
+				'accept': 'application/json, text/plain, */*',
+				'content-type': 'application/json',
+				'X-CSRFToken': csrftoken
+			},
+			body: JSON.stringify({
+				'form': userFormData,
+				'shippingInfo': shippingInfo
+			})
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				console.log('success: ', data)
+				alert('Transaction Completed')
+
+				// setting the cart cookie null after successful submission
+				cart = {}
+				document.cookie = 'cart=' + JSON.stringify(cart) + ";domain=;path=/"
+
+				window.location.href = "{% url 'order-confirmation' %}"
+			})
+
+
+
+	}
+</script>
+
+{% endblock content %}

@@ -1,0 +1,21 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+requests = "*"
+django = "*"
+django-phonenumber-field = "*"
+phonenumbers = "*"
+django-phone-field = "*"
+django-crispy-forms = "*"
+django-filter = "*"
+psycopg2 = "*"
+pillow = "*"
+django-phonenuber-field = "*"
+
+[requires]
+python_version = "3.8"
